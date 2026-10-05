@@ -34,6 +34,15 @@ export interface AttendanceRecord {
   status: 'Tepat Waktu' | 'Terlambat' | 'Cuti';
 }
 
+export interface LeaveRequest {
+  id: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  status: 'Pending' | 'Disetujui' | 'Ditolak';
+}
+
 // ==========================================
 // 1. Dummy Data (Array of Objects)
 // ==========================================
@@ -101,8 +110,13 @@ const INITIAL_ATTENDANCE: AttendanceRecord[] = [
   { id: 'ATT-4', date: '01 Okt 2026', checkIn: '08:40 AM', checkOut: '05:00 PM', status: 'Tepat Waktu' },
 ];
 
+const INITIAL_LEAVE: LeaveRequest[] = [
+  { id: 'LV-001', type: 'Cuti Tahunan', startDate: '12 Okt 2026', endDate: '14 Okt 2026', reason: 'Acara Keluarga', status: 'Disetujui' },
+  { id: 'LV-002', type: 'Izin Sakit', startDate: '20 Sep 2026', endDate: '21 Sep 2026', reason: 'Demam & Flu', status: 'Disetujui' },
+];
+
 export default function HRISApp() {
-  const [activeTab, setActiveTab] = useState<'directory' | 'attendance'>('directory');
+  const [activeTab, setActiveTab] = useState<'directory' | 'attendance' | 'leave'>('directory');
   const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDivision, setSelectedDivision] = useState('All');
@@ -111,6 +125,12 @@ export default function HRISApp() {
   const [attendanceLogs, setAttendanceLogs] = useState<AttendanceRecord[]>(INITIAL_ATTENDANCE);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
+
+  // Leave state
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>(INITIAL_LEAVE);
+  const [leaveModalVisible, setLeaveModalVisible] = useState(false);
+  const [leaveType, setLeaveType] = useState('Cuti Tahunan');
+  const [leaveReason, setLeaveReason] = useState('');
 
   // Add Employee Modal state
   const [addEmpModalVisible, setAddEmpModalVisible] = useState(false);
@@ -191,6 +211,28 @@ export default function HRISApp() {
     setNewEmpRole('');
     setNewEmpEmail('');
     Alert.alert('Sukses', 'Pegawai baru berhasil ditambahkan!');
+  };
+
+  // Add Leave Request Handler
+  const handleCreateLeave = () => {
+    if (!leaveReason.trim()) {
+      Alert.alert('Peringatan', 'Mohon isi alasan pengajuan cuti.');
+      return;
+    }
+
+    const newLeave: LeaveRequest = {
+      id: `LV-00${leaveRequests.length + 1}`,
+      type: leaveType,
+      startDate: '15 Okt 2026',
+      endDate: '17 Okt 2026',
+      reason: leaveReason,
+      status: 'Pending',
+    };
+
+    setLeaveRequests([newLeave, ...leaveRequests]);
+    setLeaveModalVisible(false);
+    setLeaveReason('');
+    Alert.alert('Sukses', 'Pengajuan cuti berhasil dikirim ke HRD!');
   };
 
   // ==========================================
@@ -326,6 +368,14 @@ export default function HRISApp() {
         >
           <Text style={[styles.tabText, activeTab === 'attendance' && styles.tabTextActive]}>
             Presensi
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[styles.tabButton, activeTab === 'leave' && styles.tabButtonActive]}
+          onPress={() => setActiveTab('leave')}
+        >
+          <Text style={[styles.tabText, activeTab === 'leave' && styles.tabTextActive]}>
+            Pengajuan Cuti
           </Text>
         </Pressable>
       </View>
@@ -468,6 +518,63 @@ export default function HRISApp() {
           </ScrollView>
         )}
 
+        {/* ================= TAB 3: PENGAJUAN CUTI ================= */}
+        {activeTab === 'leave' && (
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            {/* Header Action */}
+            <View style={styles.leaveHeaderRow}>
+              <Text style={styles.sectionHeaderTitle}>Daftar Pengajuan Cuti</Text>
+              <Pressable
+                style={styles.addLeaveBtn}
+                onPress={() => setLeaveModalVisible(true)}
+              >
+                <Text style={styles.addLeaveBtnText}>+ Ajukan Cuti</Text>
+              </Pressable>
+            </View>
+
+            {leaveRequests.map((leave) => (
+              <View key={leave.id} style={styles.leaveCard}>
+                <View style={styles.leaveTopRow}>
+                  <Text style={styles.leaveType}>{leave.type}</Text>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      {
+                        backgroundColor:
+                          leave.status === 'Disetujui'
+                            ? '#DEF7EC'
+                            : leave.status === 'Pending'
+                            ? '#FEF08A'
+                            : '#FDE8E8',
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.statusText,
+                        {
+                          color:
+                            leave.status === 'Disetujui'
+                              ? '#03543F'
+                              : leave.status === 'Pending'
+                              ? '#713F12'
+                              : '#9B1C1C',
+                        },
+                      ]}
+                    >
+                      {leave.status}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={styles.leaveDates}>
+                  {leave.startDate} s/d {leave.endDate}
+                </Text>
+                <Text style={styles.leaveReason}>Alasan: {leave.reason}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        )}
       </View>
 
       {/* ================= MODAL: TAMBAH PEGAWAI ================= */}
@@ -549,6 +656,67 @@ export default function HRISApp() {
         </View>
       </Modal>
 
+      {/* ================= MODAL: AJUKAN CUTI ================= */}
+      <Modal
+        visible={leaveModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setLeaveModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Form Pengajuan Cuti</Text>
+
+            <Text style={styles.inputLabel}>Jenis Cuti</Text>
+            <View style={styles.divisionPickerRow}>
+              {['Cuti Tahunan', 'Izin Sakit', 'Cuti Melahirkan'].map((type) => (
+                <Pressable
+                  key={type}
+                  style={[
+                    styles.pickerChip,
+                    leaveType === type && styles.pickerChipActive,
+                  ]}
+                  onPress={() => setLeaveType(type)}
+                >
+                  <Text
+                    style={[
+                      styles.pickerChipText,
+                      leaveType === type && styles.pickerChipTextActive,
+                    ]}
+                  >
+                    {type}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={styles.inputLabel}>Alasan / Keterangan *</Text>
+            <TextInput
+              style={[styles.modalInput, { height: 80, textAlignVertical: 'top' }]}
+              placeholder="Tuliskan alasan pengajuan cuti Anda..."
+              multiline
+              numberOfLines={3}
+              value={leaveReason}
+              onChangeText={setLeaveReason}
+            />
+
+            <View style={styles.modalActions}>
+              <Pressable
+                style={[styles.modalBtn, styles.modalBtnCancel]}
+                onPress={() => setLeaveModalVisible(false)}
+              >
+                <Text style={styles.modalBtnCancelText}>Batal</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modalBtn, styles.modalBtnSubmit]}
+                onPress={handleCreateLeave}
+              >
+                <Text style={styles.modalBtnSubmitText}>Kirim Pengajuan</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -892,6 +1060,55 @@ const styles = StyleSheet.create({
   logStatusText: {
     fontSize: 11,
     fontWeight: '600',
+  },
+
+  /* Leave Tab Styles */
+  leaveHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  addLeaveBtn: {
+    backgroundColor: '#4F46E5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  addLeaveBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  leaveCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  leaveTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  leaveType: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  leaveDates: {
+    fontSize: 12,
+    color: '#4B5563',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  leaveReason: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontStyle: 'italic',
   },
 
   /* Modal Styles */
