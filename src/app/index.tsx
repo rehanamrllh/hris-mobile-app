@@ -26,6 +26,14 @@ export interface Employee {
   status: 'Active' | 'On Leave' | 'Remote';
 }
 
+export interface AttendanceRecord {
+  id: string;
+  date: string;
+  checkIn: string;
+  checkOut: string;
+  status: 'Tepat Waktu' | 'Terlambat' | 'Cuti';
+}
+
 export interface LeaveRequest {
   id: string;
   type: string;
@@ -95,16 +103,28 @@ const INITIAL_EMPLOYEES: Employee[] = [
   },
 ];
 
+const INITIAL_ATTENDANCE: AttendanceRecord[] = [
+  { id: 'ATT-1', date: '06 Okt 2026', checkIn: '08:45 AM', checkOut: '05:00 PM', status: 'Tepat Waktu' },
+  { id: 'ATT-2', date: '05 Okt 2026', checkIn: '08:55 AM', checkOut: '05:05 PM', status: 'Tepat Waktu' },
+  { id: 'ATT-3', date: '02 Okt 2026', checkIn: '09:15 AM', checkOut: '05:30 PM', status: 'Terlambat' },
+  { id: 'ATT-4', date: '01 Okt 2026', checkIn: '08:40 AM', checkOut: '05:00 PM', status: 'Tepat Waktu' },
+];
+
 const INITIAL_LEAVE: LeaveRequest[] = [
   { id: 'LV-001', type: 'Cuti Tahunan', startDate: '12 Okt 2026', endDate: '14 Okt 2026', reason: 'Acara Keluarga', status: 'Disetujui' },
   { id: 'LV-002', type: 'Izin Sakit', startDate: '20 Sep 2026', endDate: '21 Sep 2026', reason: 'Demam & Flu', status: 'Disetujui' },
 ];
 
 export default function HRISApp() {
-  const [activeTab, setActiveTab] = useState<'directory' | 'leave'>('directory');
+  const [activeTab, setActiveTab] = useState<'directory' | 'attendance' | 'leave'>('directory');
   const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDivision, setSelectedDivision] = useState('All');
+
+  // Attendance state
+  const [attendanceLogs, setAttendanceLogs] = useState<AttendanceRecord[]>(INITIAL_ATTENDANCE);
+  const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [checkInTime, setCheckInTime] = useState<string | null>(null);
 
   // Leave state
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>(INITIAL_LEAVE);
@@ -138,6 +158,31 @@ export default function HRISApp() {
       .join('')
       .substring(0, 2)
       .toUpperCase();
+  };
+
+  // Clock In / Clock Out Handler
+  const handleClockToggle = () => {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const dateString = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    if (!isCheckedIn) {
+      setIsCheckedIn(true);
+      setCheckInTime(timeString);
+      Alert.alert('Presensi Berhasil', `Anda telah Check-In pada pukul ${timeString}`);
+    } else {
+      setIsCheckedIn(false);
+      const newRecord: AttendanceRecord = {
+        id: `ATT-${Date.now()}`,
+        date: dateString,
+        checkIn: checkInTime || '08:45 AM',
+        checkOut: timeString,
+        status: 'Tepat Waktu',
+      };
+      setAttendanceLogs([newRecord, ...attendanceLogs]);
+      setCheckInTime(null);
+      Alert.alert('Presensi Berhasil', `Anda telah Check-Out pada pukul ${timeString}`);
+    }
   };
 
   // Add Employee Handler
@@ -318,6 +363,14 @@ export default function HRISApp() {
           </Text>
         </Pressable>
         <Pressable
+          style={[styles.tabButton, activeTab === 'attendance' && styles.tabButtonActive]}
+          onPress={() => setActiveTab('attendance')}
+        >
+          <Text style={[styles.tabText, activeTab === 'attendance' && styles.tabTextActive]}>
+            Presensi
+          </Text>
+        </Pressable>
+        <Pressable
           style={[styles.tabButton, activeTab === 'leave' && styles.tabButtonActive]}
           onPress={() => setActiveTab('leave')}
         >
@@ -392,7 +445,80 @@ export default function HRISApp() {
           </>
         )}
 
-        {/* ================= TAB 2: PENGAJUAN CUTI ================= */}
+        {/* ================= TAB 2: PRESENSI ================= */}
+        {activeTab === 'attendance' && (
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            {/* Clock In / Clock Out Card */}
+            <View style={styles.clockCard}>
+              <Text style={styles.clockCardTitle}>Presensi Harian Hari Ini</Text>
+              <Text style={styles.clockCardSubtitle}>
+                {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              </Text>
+
+              <View style={styles.clockStatusBox}>
+                <Text style={styles.clockStatusLabel}>Status Presensi</Text>
+                <Text
+                  style={[
+                    styles.clockStatusValue,
+                    { color: isCheckedIn ? '#10B981' : '#6B7280' },
+                  ]}
+                >
+                  {isCheckedIn ? `Sudah Check-In (${checkInTime})` : 'Belum Check-In'}
+                </Text>
+              </View>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.clockButton,
+                  {
+                    backgroundColor: isCheckedIn ? '#EF4444' : '#10B981',
+                    transform: [{ scale: pressed ? 0.97 : 1 }],
+                  },
+                ]}
+                onPress={handleClockToggle}
+              >
+                <Text style={styles.clockButtonText}>
+                  {isCheckedIn ? 'CLOCK OUT (PULANG)' : 'CLOCK IN (MASUK)'}
+                </Text>
+              </Pressable>
+            </View>
+
+            {/* Attendance Logs */}
+            <Text style={styles.sectionHeaderTitle}>Riwayat Presensi</Text>
+            {attendanceLogs.map((log) => (
+              <View key={log.id} style={styles.logCard}>
+                <View style={styles.logInfo}>
+                  <Text style={styles.logDate}>{log.date}</Text>
+                  <Text style={styles.logTime}>
+                    Masuk: {log.checkIn}  •  Keluar: {log.checkOut}
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.logStatusBadge,
+                    {
+                      backgroundColor:
+                        log.status === 'Tepat Waktu' ? '#DEF7EC' : '#FDE8E8',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.logStatusText,
+                      {
+                        color: log.status === 'Tepat Waktu' ? '#03543F' : '#9B1C1C',
+                      },
+                    ]}
+                  >
+                    {log.status}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        )}
+
+        {/* ================= TAB 3: PENGAJUAN CUTI ================= */}
         {activeTab === 'leave' && (
           <ScrollView contentContainerStyle={styles.scrollContent}>
             {/* Header Action */}
@@ -844,12 +970,98 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
+  /* Clock In/Out Styles */
+  clockCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    elevation: 3,
+  },
+  clockCardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  clockCardSubtitle: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+    marginBottom: 16,
+  },
+  clockStatusBox: {
+    backgroundColor: '#F9FAFB',
+    width: '100%',
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  clockStatusLabel: {
+    fontSize: 11,
+    color: '#9CA3AF',
+  },
+  clockStatusValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+  clockButton: {
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  clockButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14,
+    letterSpacing: 0.5,
+  },
+
   sectionHeaderTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#1F2937',
     marginBottom: 12,
   },
+  logCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  logInfo: {
+    flex: 1,
+  },
+  logDate: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  logTime: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  logStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  logStatusText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+
   /* Leave Tab Styles */
   leaveHeaderRow: {
     flexDirection: 'row',
@@ -989,3 +1201,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 });
+
+
