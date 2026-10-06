@@ -155,7 +155,7 @@ const INITIAL_LEAVE: LeaveRequest[] = [
 
 export default function HRISApp() {
   const [activeTab, setActiveTab] = useState<
-    "directory" | "attendance" | "leave"
+    "directory" | "attendance" | "leave" | "profile"
   >("directory");
   const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
   const [searchQuery, setSearchQuery] = useState("");
@@ -203,6 +203,8 @@ export default function HRISApp() {
       selectedDivision === "All" || emp.division === selectedDivision;
     return matchesSearch && matchesDivision;
   });
+  const profileEmployee =
+    employees.find((employee) => employee.id === "EMP-001") ?? employees[0];
 
   const getInitials = (name: string) => {
     return name
@@ -228,8 +230,7 @@ export default function HRISApp() {
 
     if (!isCheckedIn) {
       const isLate =
-        now.getHours() > 8 ||
-        (now.getHours() === 8 && now.getMinutes() > 30);
+        now.getHours() > 8 || (now.getHours() === 8 && now.getMinutes() > 30);
       setIsCheckedIn(true);
       setCheckInTime(timeString);
       setCheckInStatus(isLate ? "Terlambat" : "Tepat Waktu");
@@ -492,6 +493,22 @@ export default function HRISApp() {
             Pengajuan Cuti
           </Text>
         </Pressable>
+        <Pressable
+          style={[
+            styles.tabButton,
+            activeTab === "profile" && styles.tabButtonActive,
+          ]}
+          onPress={() => setActiveTab("profile")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "profile" && styles.tabTextActive,
+            ]}
+          >
+            Profil
+          </Text>
+        </Pressable>
       </View>
       {/* ================= NAVIGASI TAB: SELESAI ================= */}
 
@@ -705,6 +722,61 @@ export default function HRISApp() {
           </ScrollView>
         )}
         {/* ================= TAB 3: PENGAJUAN CUTI - SELESAI ================= */}
+
+        {/* ================= TAB 4: DATA PROFIL ================= */}
+        {activeTab === "profile" && (
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            <Text style={styles.sectionHeaderTitle}>Data Profil</Text>
+            {profileEmployee && (
+              <View style={styles.profileCard}>
+                <View style={styles.profileHeader}>
+                  <View
+                    style={[
+                      styles.profileAvatar,
+                      { backgroundColor: profileEmployee.avatarBg },
+                    ]}
+                  >
+                    <Text style={styles.profileInitials}>
+                      {getInitials(profileEmployee.name)}
+                    </Text>
+                  </View>
+                  <View style={styles.profileIdentity}>
+                    <Text style={styles.profileName}>
+                      {profileEmployee.name}
+                    </Text>
+                    <Text style={styles.profileRole}>
+                      {profileEmployee.role}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.profileDivider} />
+                <View style={styles.profileRow}>
+                  <Text style={styles.profileLabel}>ID Pegawai</Text>
+                  <Text style={styles.profileValue}>{profileEmployee.id}</Text>
+                </View>
+                <View style={styles.profileRow}>
+                  <Text style={styles.profileLabel}>Divisi</Text>
+                  <Text style={styles.profileValue}>
+                    {profileEmployee.division}
+                  </Text>
+                </View>
+                <View style={styles.profileRow}>
+                  <Text style={styles.profileLabel}>Email</Text>
+                  <Text style={styles.profileValue}>
+                    {profileEmployee.email}
+                  </Text>
+                </View>
+                <View style={styles.profileRow}>
+                  <Text style={styles.profileLabel}>Status</Text>
+                  <Text style={styles.profileValue}>
+                    {profileEmployee.status}
+                  </Text>
+                </View>
+              </View>
+            )}
+          </ScrollView>
+        )}
       </View>
       {/* ================= KONTEN TAB: SELESAI ================= */}
 
@@ -1246,6 +1318,68 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#6B7280",
     fontStyle: "italic",
+  },
+
+  /* Profile Tab Styles */
+  profileCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  profileHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  profileAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  profileInitials: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  profileIdentity: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  profileRole: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginTop: 3,
+  },
+  profileDivider: {
+    height: 1,
+    backgroundColor: "#E5E7EB",
+    marginVertical: 14,
+  },
+  profileRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    paddingVertical: 8,
+    gap: 12,
+  },
+  profileLabel: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  profileValue: {
+    flex: 1,
+    fontSize: 12,
+    color: "#1F2937",
+    fontWeight: "600",
+    textAlign: "right",
   },
 
   /* Modal Styles */
