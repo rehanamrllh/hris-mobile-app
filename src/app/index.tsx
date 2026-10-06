@@ -166,6 +166,9 @@ export default function HRISApp() {
     useState<AttendanceRecord[]>(INITIAL_ATTENDANCE);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
+  const [checkInStatus, setCheckInStatus] = useState<
+    "Tepat Waktu" | "Terlambat"
+  >("Tepat Waktu");
 
   // Leave state
   const [leaveRequests, setLeaveRequests] =
@@ -224,8 +227,12 @@ export default function HRISApp() {
     });
 
     if (!isCheckedIn) {
+      const isLate =
+        now.getHours() > 8 ||
+        (now.getHours() === 8 && now.getMinutes() > 30);
       setIsCheckedIn(true);
       setCheckInTime(timeString);
+      setCheckInStatus(isLate ? "Terlambat" : "Tepat Waktu");
       Alert.alert(
         "Presensi Berhasil",
         `Anda telah Check-In pada pukul ${timeString}`,
@@ -237,10 +244,11 @@ export default function HRISApp() {
         date: dateString,
         checkIn: checkInTime || "08:45 AM",
         checkOut: timeString,
-        status: "Tepat Waktu",
+        status: checkInStatus,
       };
       setAttendanceLogs([newRecord, ...attendanceLogs]);
       setCheckInTime(null);
+      setCheckInStatus("Tepat Waktu");
       Alert.alert(
         "Presensi Berhasil",
         `Anda telah Check-Out pada pukul ${timeString}`,
