@@ -393,7 +393,7 @@ export default function HRISApp() {
     <SafeAreaView style={styles.safeContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#1E1B4B" />
 
-      {/* Header Banner */}
+      {/* ================= AREA DI ATAS TAB: HEADER & RINGKASAN ================= */}
       <View style={styles.header}>
         <View style={styles.headerTopRow}>
           <View>
@@ -432,8 +432,9 @@ export default function HRISApp() {
           </View>
         </View>
       </View>
+      {/* ================= AKHIR AREA DI ATAS TAB ================= */}
 
-      {/* Main Tab Navigation */}
+      {/* ================= NAVIGASI TAB: MULAI ================= */}
       <View style={styles.tabBarContainer}>
         <Pressable
           style={[
@@ -484,10 +485,11 @@ export default function HRISApp() {
           </Text>
         </Pressable>
       </View>
+      {/* ================= NAVIGASI TAB: SELESAI ================= */}
 
-      {/* Main Content Area */}
+      {/* ================= KONTEN TAB: MULAI ================= */}
       <View style={styles.contentContainer}>
-        {/* ================= TAB 1: DIREKTORI ================= */}
+        {/* ================= TAB 1: DIREKTORI - MULAI ================= */}
         {activeTab === "directory" && (
           <>
             {/* Search Bar */}
@@ -549,8 +551,9 @@ export default function HRISApp() {
             />
           </>
         )}
+        {/* ================= TAB 1: DIREKTORI - SELESAI ================= */}
 
-        {/* ================= TAB 2: PRESENSI ================= */}
+        {/* ================= TAB 2: PRESENSI - MULAI ================= */}
         {activeTab === "attendance" && (
           <ScrollView contentContainerStyle={styles.scrollContent}>
             {/* Clock In / Clock Out Card */}
@@ -632,8 +635,9 @@ export default function HRISApp() {
             ))}
           </ScrollView>
         )}
+        {/* ================= TAB 2: PRESENSI - SELESAI ================= */}
 
-        {/* ================= TAB 3: PENGAJUAN CUTI ================= */}
+        {/* ================= TAB 3: PENGAJUAN CUTI - MULAI ================= */}
         {activeTab === "leave" && (
           <ScrollView contentContainerStyle={styles.scrollContent}>
             {/* Header Action */}
@@ -692,7 +696,9 @@ export default function HRISApp() {
             ))}
           </ScrollView>
         )}
+        {/* ================= TAB 3: PENGAJUAN CUTI - SELESAI ================= */}
       </View>
+      {/* ================= KONTEN TAB: SELESAI ================= */}
 
       {/* ================= MODAL: TAMBAH PEGAWAI ================= */}
       <Modal
