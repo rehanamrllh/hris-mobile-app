@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useRouter } from "expo-router";
 import {
   Alert,
   FlatList,
@@ -154,6 +155,7 @@ const INITIAL_LEAVE: LeaveRequest[] = [
 ];
 
 export default function HRISApp() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<
     "directory" | "attendance" | "leave" | "profile"
   >("directory");
@@ -385,10 +387,18 @@ export default function HRISApp() {
               },
             ]}
             onPress={() =>
-              Alert.alert(
-                "Detail Pegawai",
-                `Nama: ${item.name}\nID: ${item.id}\nDivisi: ${item.division}\nRole: ${item.role}\nEmail: ${item.email}\nStatus: ${item.status}`,
-              )
+              router.push({
+                pathname: "/employee/[id]",
+                params: {
+                  id: item.id,
+                  name: item.name,
+                  role: item.role,
+                  division: item.division,
+                  email: item.email,
+                  status: item.status,
+                  avatarBg: item.avatarBg,
+                },
+              })
             }
           >
             <Text style={styles.actionButtonText}>Lihat Detail</Text>
