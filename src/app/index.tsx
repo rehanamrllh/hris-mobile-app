@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import {
   Alert,
@@ -162,12 +162,14 @@ export default function HRISApp() {
   const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDivision, setSelectedDivision] = useState("All");
+  const [isLoading, setIsLoading] = useState(true);
 
   // Attendance state
   const [attendanceLogs, setAttendanceLogs] =
     useState<AttendanceRecord[]>(INITIAL_ATTENDANCE);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const [checkInStatus, setCheckInStatus] = useState<
     "Tepat Waktu" | "Terlambat"
   >("Tepat Waktu");
@@ -185,6 +187,32 @@ export default function HRISApp() {
   const [newEmpRole, setNewEmpRole] = useState("");
   const [newEmpDivision, setNewEmpDivision] = useState("Engineering");
   const [newEmpEmail, setNewEmpEmail] = useState("");
+
+  useEffect(() => {
+    const loadingTimer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
+
+    return () => clearTimeout(loadingTimer);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab !== "attendance") {
+      return;
+    }
+
+    const initialClockUpdate = setTimeout(() => {
+      setCurrentTime(new Date());
+    }, 0);
+    const clockInterval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => {
+      clearTimeout(initialClockUpdate);
+      clearInterval(clockInterval);
+    };
+  }, [activeTab]);
 
   const divisions = [
     "All",
@@ -412,8 +440,15 @@ export default function HRISApp() {
     <SafeAreaView style={styles.safeContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#1E1B4B" />
 
-      {/* ================= AREA DI ATAS TAB: HEADER & RINGKASAN ================= */}
-      <View style={styles.header}>
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingTitle}>Memuat data HRIS...</Text>
+          <Text style={styles.loadingSubtitle}>Mohon tunggu sebentar</Text>
+        </View>
+      ) : (
+        <>
+          {/* ================= AREA DI ATAS TAB: HEADER & RINGKASAN ================= */}
+          <View style={styles.header}>
         <View style={styles.headerTopRow}>
           <View>
             <Text style={styles.headerTitle}>HRIS Mobile App</Text>
@@ -450,11 +485,11 @@ export default function HRISApp() {
             <Text style={styles.statLabel}>Remote</Text>
           </View>
         </View>
-      </View>
-      {/* ================= AKHIR AREA DI ATAS TAB ================= */}
+          </View>
+          {/* ================= AKHIR AREA DI ATAS TAB ================= */}
 
-      {/* ================= NAVIGASI TAB: MULAI ================= */}
-      <View style={styles.tabBarContainer}>
+          {/* ================= NAVIGASI TAB: MULAI ================= */}
+          <View style={styles.tabBarContainer}>
         <Pressable
           style={[
             styles.tabButton,
@@ -519,11 +554,11 @@ export default function HRISApp() {
             Profil
           </Text>
         </Pressable>
-      </View>
-      {/* ================= NAVIGASI TAB: SELESAI ================= */}
+          </View>
+          {/* ================= NAVIGASI TAB: SELESAI ================= */}
 
-      {/* ================= KONTEN TAB: MULAI ================= */}
-      <View style={styles.contentContainer}>
+          {/* ================= KONTEN TAB: MULAI ================= */}
+          <View style={styles.contentContainer}>
         {/* ================= TAB 1: DIREKTORI - MULAI ================= */}
         {activeTab === "directory" && (
           <>
@@ -602,6 +637,14 @@ export default function HRISApp() {
                   day: "numeric",
                   month: "long",
                   year: "numeric",
+                })}
+              </Text>
+              <Text style={styles.liveClockLabel}>Waktu Saat Ini</Text>
+              <Text style={styles.liveClock}>
+                {currentTime.toLocaleTimeString("id-ID", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
                 })}
               </Text>
 
@@ -787,11 +830,11 @@ export default function HRISApp() {
             )}
           </ScrollView>
         )}
-      </View>
-      {/* ================= KONTEN TAB: SELESAI ================= */}
+          </View>
+          {/* ================= KONTEN TAB: SELESAI ================= */}
 
-      {/* ================= MODAL: TAMBAH PEGAWAI ================= */}
-      <Modal
+          {/* ================= MODAL: TAMBAH PEGAWAI ================= */}
+          <Modal
         visible={addEmpModalVisible}
         animationType="slide"
         transparent={true}
@@ -870,10 +913,10 @@ export default function HRISApp() {
             </View>
           </View>
         </View>
-      </Modal>
+          </Modal>
 
-      {/* ================= MODAL: AJUKAN CUTI ================= */}
-      <Modal
+          {/* ================= MODAL: AJUKAN CUTI ================= */}
+          <Modal
         visible={leaveModalVisible}
         animationType="slide"
         transparent={true}
@@ -935,7 +978,9 @@ export default function HRISApp() {
             </View>
           </View>
         </View>
-      </Modal>
+          </Modal>
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -947,6 +992,22 @@ const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
     backgroundColor: "#1E1B4B",
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F3F4F6",
+  },
+  loadingTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1E1B4B",
+  },
+  loadingSubtitle: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 6,
   },
   header: {
     backgroundColor: "#1E1B4B",
@@ -1209,6 +1270,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#6B7280",
     marginTop: 2,
+    marginBottom: 10,
+  },
+  liveClockLabel: {
+    fontSize: 11,
+    color: "#9CA3AF",
+    marginTop: 2,
+  },
+  liveClock: {
+    fontSize: 30,
+    fontWeight: "700",
+    color: "#4F46E5",
+    letterSpacing: 1,
+    marginTop: 4,
     marginBottom: 16,
   },
   clockStatusBox: {
