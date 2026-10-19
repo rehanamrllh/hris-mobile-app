@@ -1,6 +1,12 @@
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import {
+  DarkTheme,
+  DefaultTheme,
+  Stack,
+  ThemeProvider,
+  useRouter,
+} from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { Pressable, Text, useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 
@@ -8,6 +14,8 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const router = useRouter();
+
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
@@ -28,9 +36,24 @@ export default function RootLayout() {
         <Stack.Screen
           name="employee/[id]"
           options={{
-            title: 'Detail Pegawai',
+            title: 'Kembali ke Daftar Pegawai',
             headerShown: true,
-            headerBackTitle: 'Kembali',
+            headerLeft: () => (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Kembali ke daftar pegawai."
+                onPress={() => {
+                  if (router.canGoBack()) {
+                    router.back();
+                  } else {
+                    router.replace('/');
+                  }
+                }}
+                style={{ marginRight: 8, padding: 4 }}
+              >
+                <Text style={{ color: '#FFFFFF', fontSize: 24 }}>‹</Text>
+              </Pressable>
+            ),
           }}
         />
       </Stack>
