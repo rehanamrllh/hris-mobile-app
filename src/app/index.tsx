@@ -14,9 +14,6 @@ import {
   View,
 } from "react-native";
 
-// ==========================================
-// 2. TypeScript Interfaces
-// ==========================================
 export interface Employee {
   id: string;
   name: string;
@@ -44,9 +41,6 @@ export interface LeaveRequest {
   status: "Pending" | "Disetujui" | "Ditolak";
 }
 
-// ==========================================
-// 1. Dummy Data (Array of Objects)
-// ==========================================
 const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: "EMP-001",
@@ -164,7 +158,6 @@ export default function HRISApp() {
   const [selectedDivision, setSelectedDivision] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
 
-  // Attendance state
   const [attendanceLogs, setAttendanceLogs] =
     useState<AttendanceRecord[]>(INITIAL_ATTENDANCE);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
@@ -174,14 +167,12 @@ export default function HRISApp() {
     "Tepat Waktu" | "Terlambat"
   >("Tepat Waktu");
 
-  // Leave state
   const [leaveRequests, setLeaveRequests] =
     useState<LeaveRequest[]>(INITIAL_LEAVE);
   const [leaveModalVisible, setLeaveModalVisible] = useState(false);
   const [leaveType, setLeaveType] = useState("Cuti Tahunan");
   const [leaveReason, setLeaveReason] = useState("");
 
-  // Add Employee Modal state
   const [addEmpModalVisible, setAddEmpModalVisible] = useState(false);
   const [newEmpName, setNewEmpName] = useState("");
   const [newEmpRole, setNewEmpRole] = useState("");
@@ -223,7 +214,6 @@ export default function HRISApp() {
     "Finance & Accounting",
   ];
 
-  // Filter employees
   const filteredEmployees = employees.filter((emp) => {
     const matchesSearch =
       emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -245,7 +235,6 @@ export default function HRISApp() {
       .toUpperCase();
   };
 
-  // Clock In / Clock Out Handler
   const handleClockToggle = () => {
     const now = new Date();
     const timeString = now.toLocaleTimeString([], {
@@ -287,7 +276,6 @@ export default function HRISApp() {
     }
   };
 
-  // Add Employee Handler
   const handleAddEmployee = () => {
     if (!newEmpName.trim() || !newEmpRole.trim()) {
       Alert.alert("Peringatan", "Mohon isi nama dan jabatan pegawai.");
@@ -324,7 +312,6 @@ export default function HRISApp() {
     Alert.alert("Sukses", "Pegawai baru berhasil ditambahkan!");
   };
 
-  // Add Leave Request Handler
   const handleCreateLeave = () => {
     if (!leaveReason.trim()) {
       Alert.alert("Peringatan", "Mohon isi alasan pengajuan cuti.");
@@ -346,9 +333,6 @@ export default function HRISApp() {
     Alert.alert("Sukses", "Pengajuan cuti berhasil dikirim ke HRD!");
   };
 
-  // ==========================================
-  // 3. Custom Function (renderEmployeeCard)
-  // ==========================================
   const renderEmployeeCard = ({ item }: { item: Employee }) => {
     const getStatusStyle = (status: Employee["status"]) => {
       switch (status) {
@@ -368,7 +352,6 @@ export default function HRISApp() {
     return (
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          {/* Custom Avatar with Dynamic Background (Inline Style example) */}
           <View
             style={[styles.avatarContainer, { backgroundColor: item.avatarBg }]}
           >
@@ -378,7 +361,6 @@ export default function HRISApp() {
           <View style={styles.employeeMainInfo}>
             <View style={styles.nameRow}>
               <Text style={styles.employeeName}>{item.name}</Text>
-              {/* Status Badge with dynamic inline style */}
               <View
                 style={[
                   styles.statusBadge,
@@ -404,11 +386,9 @@ export default function HRISApp() {
         <View style={styles.cardFooter}>
           <Text style={styles.employeeIdText}>ID: {item.id}</Text>
 
-          {/* 6. Basic UI Component: Pressable */}
           <Pressable
             style={({ pressed }) => [
               styles.actionButton,
-              // 5. Example of INLINE STYLING for pressed state feedback
               {
                 backgroundColor: pressed ? "#4338CA" : "#4F46E5",
                 transform: [{ scale: pressed ? 0.96 : 1 }],
@@ -447,7 +427,6 @@ export default function HRISApp() {
         </View>
       ) : (
         <>
-          {/* ================= AREA DI ATAS TAB: HEADER & RINGKASAN ================= */}
           <View style={styles.header}>
         <View style={styles.headerTopRow}>
           <View>
@@ -464,7 +443,6 @@ export default function HRISApp() {
           </Pressable>
         </View>
 
-        {/* Stats Row */}
         <View style={styles.statsContainer}>
           <View style={styles.statBox}>
             <Text style={styles.statNumber}>{employees.length}</Text>
@@ -486,9 +464,6 @@ export default function HRISApp() {
           </View>
         </View>
           </View>
-          {/* ================= AKHIR AREA DI ATAS TAB ================= */}
-
-          {/* ================= NAVIGASI TAB: MULAI ================= */}
           <View style={styles.tabBarContainer}>
         <Pressable
           style={[
@@ -555,14 +530,9 @@ export default function HRISApp() {
           </Text>
         </Pressable>
           </View>
-          {/* ================= NAVIGASI TAB: SELESAI ================= */}
-
-          {/* ================= KONTEN TAB: MULAI ================= */}
           <View style={styles.contentContainer}>
-        {/* ================= TAB 1: DIREKTORI - MULAI ================= */}
         {activeTab === "directory" && (
           <>
-            {/* Search Bar */}
             <View style={styles.searchSection}>
               <TextInput
                 style={styles.searchInput}
@@ -573,7 +543,6 @@ export default function HRISApp() {
               />
             </View>
 
-            {/* Division Filter Pills */}
             <View style={styles.filterSection}>
               <FlatList
                 horizontal
@@ -604,7 +573,6 @@ export default function HRISApp() {
               />
             </View>
 
-            {/* Looping Component: FlatList */}
             <FlatList
               data={filteredEmployees}
               keyExtractor={(item) => item.id}
@@ -621,12 +589,8 @@ export default function HRISApp() {
             />
           </>
         )}
-        {/* ================= TAB 1: DIREKTORI - SELESAI ================= */}
-
-        {/* ================= TAB 2: PRESENSI - MULAI ================= */}
         {activeTab === "attendance" && (
           <ScrollView contentContainerStyle={styles.scrollContent}>
-            {/* Clock In / Clock Out Card */}
             <View style={styles.clockCard}>
               <Text style={styles.clockCardTitle}>
                 Presensi Harian Hari Ini
@@ -678,7 +642,6 @@ export default function HRISApp() {
               </Pressable>
             </View>
 
-            {/* Attendance Logs */}
             <Text style={styles.sectionHeaderTitle}>Riwayat Presensi</Text>
             {attendanceLogs.map((log) => (
               <View key={log.id} style={styles.logCard}>
@@ -713,12 +676,8 @@ export default function HRISApp() {
             ))}
           </ScrollView>
         )}
-        {/* ================= TAB 2: PRESENSI - SELESAI ================= */}
-
-        {/* ================= TAB 3: PENGAJUAN CUTI - MULAI ================= */}
         {activeTab === "leave" && (
           <ScrollView contentContainerStyle={styles.scrollContent}>
-            {/* Header Action */}
             <View style={styles.leaveHeaderRow}>
               <Text style={styles.sectionHeaderTitle}>
                 Daftar Pengajuan Cuti
@@ -774,9 +733,6 @@ export default function HRISApp() {
             ))}
           </ScrollView>
         )}
-        {/* ================= TAB 3: PENGAJUAN CUTI - SELESAI ================= */}
-
-        {/* ================= TAB 4: DATA PROFIL ================= */}
         {activeTab === "profile" && (
           <ScrollView contentContainerStyle={styles.scrollContent}>
             <Text style={styles.sectionHeaderTitle}>Data Profil</Text>
@@ -831,9 +787,6 @@ export default function HRISApp() {
           </ScrollView>
         )}
           </View>
-          {/* ================= KONTEN TAB: SELESAI ================= */}
-
-          {/* ================= MODAL: TAMBAH PEGAWAI ================= */}
           <Modal
         visible={addEmpModalVisible}
         animationType="slide"
@@ -915,7 +868,6 @@ export default function HRISApp() {
         </View>
           </Modal>
 
-          {/* ================= MODAL: AJUKAN CUTI ================= */}
           <Modal
         visible={leaveModalVisible}
         animationType="slide"
@@ -985,9 +937,6 @@ export default function HRISApp() {
   );
 }
 
-// ==========================================
-// 5. External Styling using StyleSheet.create()
-// ==========================================
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
@@ -1071,7 +1020,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#4338CA",
   },
 
-  /* Navigation Tabs */
   tabBarContainer: {
     flexDirection: "row",
     backgroundColor: "#1E1B4B",
@@ -1250,7 +1198,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  /* Clock In/Out Styles */
   clockCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
@@ -1355,7 +1302,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  /* Leave Tab Styles */
   leaveHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1404,7 +1350,6 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
 
-  /* Profile Tab Styles */
   profileCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 14,
@@ -1466,7 +1411,6 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
 
-  /* Modal Styles */
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
