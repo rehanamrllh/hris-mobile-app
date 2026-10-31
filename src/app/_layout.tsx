@@ -49,7 +49,7 @@ export default function RootLayout() {
                     router.replace('/');
                   }
                 }}
-                style={{ marginRight: 8, padding: 4 }}
+                style={{ marginLeft: 7, padding: 4, marginBottom:5 }}
               >
                 <Text style={{ color: '#FFFFFF', fontSize: 24 }}>‹</Text>
               </Pressable>
