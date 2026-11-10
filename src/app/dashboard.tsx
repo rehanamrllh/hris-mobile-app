@@ -466,7 +466,7 @@ export default function Dashboard() {
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      <StatusBar barStyle="light-content" backgroundColor="#1E1B4B" />
+      <StatusBar barStyle="light-content" />
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -482,29 +482,6 @@ export default function Dashboard() {
                 <Text style={styles.headerSubtitle}>
                   Employee Management System
                 </Text>
-              </View>
-              <View style={styles.headerActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => router.replace("/baru")}
-                  style={styles.loginBtnHeader}
-                >
-                  <Text style={styles.loginBtnText}>Login</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => router.replace("/new")}
-                  style={styles.loginBtnHeader}
-                >
-                  <Text style={styles.loginBtnText}>new</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => setAddEmpModalVisible(true)}
-                  style={styles.addEmployeeBtnHeader}
-                >
-                  <Text style={styles.addEmployeeBtnText}>+ Employee</Text>
-                </Pressable>
               </View>
             </View>
 

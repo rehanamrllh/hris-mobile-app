@@ -538,7 +538,7 @@ export default function HRISApp() {
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      <StatusBar barStyle="light-content" backgroundColor="#1E1B4B" />
+      <StatusBar barStyle="light-content" />
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
