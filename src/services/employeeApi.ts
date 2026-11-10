@@ -9,8 +9,10 @@ export async function getEmployees(): Promise<ExternalEmployeeResponse> {
   const response = await fetch(EMPLOYEE_API_URL);
 
   if (!response.ok) {
-    throw new Error(
-      `Gagal mengambil data karyawan. Status server: ${response.status}`,
+    return Promise.reject(
+      new Error(
+        `Gagal mengambil data karyawan. Status server: ${response.status}`,
+      ),
     );
   }
 
