@@ -193,7 +193,7 @@ export default function Dashboard() {
     let isMounted = true;
 
     void Promise.resolve()
-      .then(getEmployees)
+      .then(() => getEmployees())
       .then(({ users }) => {
         if (!isMounted) {
           return;

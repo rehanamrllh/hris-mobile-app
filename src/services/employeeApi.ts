@@ -5,8 +5,10 @@ import {
 
 const EMPLOYEE_API_URL = "https://dummyjson.com/users";
 
-export async function getEmployees(): Promise<ExternalEmployeeResponse> {
-  const response = await fetch(EMPLOYEE_API_URL);
+export async function getEmployees(
+  signal?: AbortSignal,
+): Promise<ExternalEmployeeResponse> {
+  const response = await fetch(EMPLOYEE_API_URL, { signal });
 
   if (!response.ok) {
     return Promise.reject(

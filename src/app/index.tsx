@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
+import { getEmployees } from "@/services/employeeApi";
+import type { ExternalEmployee } from "@/types/externalEmployee";
 import {
   Alert,
   FlatList,
@@ -41,31 +43,6 @@ export interface LeaveRequest {
   status: "Pending" | "Disetujui" | "Ditolak";
 }
 
-interface ExternalApiUser {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-  address: {
-    street: string;
-    suite: string;
-    city: string;
-    zipcode: string;
-    geo: {
-      lat: string;
-      lng: string;
-    };
-  };
-  phone: string;
-  website: string;
-  company: {
-    name: string;
-    catchPhrase: string;
-    bs: string;
-  };
-}
-
-const EXTERNAL_API_URL = "https://jsonplaceholder.typicode.com/users";
 const AVATAR_COLORS = [
   "#4F46E5",
   "#EC4899",
@@ -75,55 +52,14 @@ const AVATAR_COLORS = [
   "#8B5CF6",
 ];
 
-const isExternalApiUser = (value: unknown): value is ExternalApiUser => {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  const user = value as Record<string, unknown>;
-  const company =
-    typeof user.company === "object" && user.company !== null
-      ? (user.company as Record<string, unknown>)
-      : null;
-  const address =
-    typeof user.address === "object" && user.address !== null
-      ? (user.address as Record<string, unknown>)
-      : null;
-  const geo =
-    address && typeof address.geo === "object" && address.geo !== null
-      ? (address.geo as Record<string, unknown>)
-      : null;
-
-  return (
-    typeof user.id === "number" &&
-    typeof user.name === "string" &&
-    typeof user.username === "string" &&
-    typeof user.email === "string" &&
-    address !== null &&
-    typeof address.street === "string" &&
-    typeof address.suite === "string" &&
-    typeof address.city === "string" &&
-    typeof address.zipcode === "string" &&
-    geo !== null &&
-    typeof geo.lat === "string" &&
-    typeof geo.lng === "string" &&
-    typeof user.phone === "string" &&
-    typeof user.website === "string" &&
-    company !== null &&
-    typeof company.name === "string" &&
-    typeof company.catchPhrase === "string" &&
-    typeof company.bs === "string"
-  );
-};
-
-const mapExternalUserToEmployee = (
-  user: ExternalApiUser,
+const mapExternalEmployeeToEmployee = (
+  user: ExternalEmployee,
   index: number,
 ): Employee => ({
   id: `EMP-${String(user.id).padStart(3, "0")}`,
-  name: user.name,
-  division: user.company.name,
-  role: user.company.catchPhrase,
+  name: `${user.firstName} ${user.lastName}`,
+  division: user.company.department,
+  role: user.company.title,
   email: user.email,
   avatarBg: AVATAR_COLORS[index % AVATAR_COLORS.length],
   status: user.id % 2 === 0 ? "Remote" : "Active",
@@ -242,9 +178,7 @@ export default function HRISApp() {
     "directory" | "attendance" | "leave" | "profile"
   >("directory");
   const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
-  const [externalApiData, setExternalApiData] = useState<ExternalApiUser[]>(
-    [],
-  );
+  const [externalApiCount, setExternalApiCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDivision, setSelectedDivision] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
@@ -275,21 +209,9 @@ export default function HRISApp() {
 
     const loadExternalEmployees = async () => {
       try {
-        const response = await fetch(EXTERNAL_API_URL, {
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(`External API mengembalikan status ${response.status}`);
-        }
-
-        const payload: unknown = await response.json();
-        if (!Array.isArray(payload) || !payload.every(isExternalApiUser)) {
-          throw new Error("Struktur data External API tidak sesuai.");
-        }
-
-        setExternalApiData(payload);
-        setEmployees(payload.map(mapExternalUserToEmployee));
+        const { users } = await getEmployees(controller.signal);
+        setExternalApiCount(users.length);
+        setEmployees(users.map(mapExternalEmployeeToEmployee));
       } catch (error) {
         if (controller.signal.aborted) {
           return;
@@ -553,8 +475,8 @@ export default function HRISApp() {
             <Text style={styles.headerTitle}>HRIS Mobile App</Text>
             <Text style={styles.headerSubtitle}>
               Employee Management System
-              {externalApiData.length > 0
-                ? ` • ${externalApiData.length} data dari API`
+              {externalApiCount > 0
+                ? ` • ${externalApiCount} data dari API`
                 : ""}
             </Text>
           </View>
