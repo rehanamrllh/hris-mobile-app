@@ -31,6 +31,7 @@ export default function AppLayout() {
     >
       <Stack.Screen name="index" options={{ title: "HRIS Dashboard", headerShown: true }} />
       <Stack.Screen name="employee/[id]" options={{ title: "Detail Pegawai" }} />
+      <Stack.Screen name="leave" options={{ title: "Pengajuan Cuti" }} />
     </Stack>
   );
 }
