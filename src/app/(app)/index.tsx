@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
+import { useAuth } from "@/context/AuthContext";
 import { getEmployees } from "@/services/employeeApi";
 import type { ExternalEmployee } from "@/types/externalEmployee";
 import {
@@ -174,6 +175,7 @@ const INITIAL_LEAVE: LeaveRequest[] = [
 
 export default function HRISApp() {
   const router = useRouter();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<
     "directory" | "attendance" | "leave" | "profile"
   >("directory");
@@ -272,8 +274,28 @@ export default function HRISApp() {
       selectedDivision === "All" || emp.division === selectedDivision;
     return matchesSearch && matchesDivision;
   });
-  const profileEmployee =
-    employees.find((employee) => employee.id === "EMP-001") ?? employees[0];
+  const metadata = user?.user_metadata ?? {};
+  const profileName =
+    typeof metadata.full_name === "string" && metadata.full_name.trim()
+      ? metadata.full_name.trim()
+      : user?.email?.split("@")[0] ?? "Pengguna";
+  const profileDivision =
+    typeof metadata.division === "string" && metadata.division.trim()
+      ? metadata.division.trim()
+      : "Belum ditentukan";
+  const profileRole =
+    typeof metadata.role === "string" && metadata.role.trim()
+      ? metadata.role.trim()
+      : "Pegawai";
+  const profileEmployee: Employee = {
+    id: user?.id ? `USR-${user.id.substring(0, 8).toUpperCase()}` : "-",
+    name: profileName,
+    division: profileDivision,
+    role: profileRole,
+    email: user?.email ?? "-",
+    avatarBg: "#4F46E5",
+    status: "Active",
+  };
 
   const getInitials = (name: string) => {
     return name
