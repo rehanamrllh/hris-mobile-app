@@ -35,15 +35,6 @@ export interface AttendanceRecord {
   status: "Tepat Waktu" | "Terlambat" | "Cuti";
 }
 
-export interface LeaveRequest {
-  id: string;
-  type: string;
-  startDate: string;
-  endDate: string;
-  reason: string;
-  status: "Pending" | "Disetujui" | "Ditolak";
-}
-
 const AVATAR_COLORS = [
   "#4F46E5",
   "#EC4899",
@@ -154,30 +145,11 @@ const INITIAL_ATTENDANCE: AttendanceRecord[] = [
   },
 ];
 
-const INITIAL_LEAVE: LeaveRequest[] = [
-  {
-    id: "LV-001",
-    type: "Cuti Tahunan",
-    startDate: "12 Okt 2026",
-    endDate: "14 Okt 2026",
-    reason: "Acara Keluarga",
-    status: "Disetujui",
-  },
-  {
-    id: "LV-002",
-    type: "Izin Sakit",
-    startDate: "20 Sep 2026",
-    endDate: "21 Sep 2026",
-    reason: "Demam & Flu",
-    status: "Disetujui",
-  },
-];
-
 export default function HRISApp() {
   const router = useRouter();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<
-    "directory" | "attendance" | "leave" | "profile"
+    "directory" | "attendance" | "profile"
   >("directory");
   const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
   const [externalApiCount, setExternalApiCount] = useState(0);
@@ -193,12 +165,6 @@ export default function HRISApp() {
   const [checkInStatus, setCheckInStatus] = useState<
     "Tepat Waktu" | "Terlambat"
   >("Tepat Waktu");
-
-  const [leaveRequests, setLeaveRequests] =
-    useState<LeaveRequest[]>(INITIAL_LEAVE);
-  const [leaveModalVisible, setLeaveModalVisible] = useState(false);
-  const [leaveType, setLeaveType] = useState("Cuti Tahunan");
-  const [leaveReason, setLeaveReason] = useState("");
 
   const [addEmpModalVisible, setAddEmpModalVisible] = useState(false);
   const [newEmpName, setNewEmpName] = useState("");
@@ -376,27 +342,6 @@ export default function HRISApp() {
     Alert.alert("Sukses", "Pegawai baru berhasil ditambahkan!");
   };
 
-  const handleCreateLeave = () => {
-    if (!leaveReason.trim()) {
-      Alert.alert("Peringatan", "Mohon isi alasan pengajuan cuti.");
-      return;
-    }
-
-    const newLeave: LeaveRequest = {
-      id: `LV-00${leaveRequests.length + 1}`,
-      type: leaveType,
-      startDate: "15 Okt 2026",
-      endDate: "17 Okt 2026",
-      reason: leaveReason,
-      status: "Pending",
-    };
-
-    setLeaveRequests([newLeave, ...leaveRequests]);
-    setLeaveModalVisible(false);
-    setLeaveReason("");
-    Alert.alert("Sukses", "Pengajuan cuti berhasil dikirim ke HRD!");
-  };
-
   const renderEmployeeCard = ({ item }: { item: Employee }) => {
     const getStatusStyle = (status: Employee["status"]) => {
       switch (status) {
@@ -565,20 +510,10 @@ export default function HRISApp() {
           </Text>
         </Pressable>
         <Pressable
-          style={[
-            styles.tabButton,
-            activeTab === "leave" && styles.tabButtonActive,
-          ]}
-          onPress={() => setActiveTab("leave")}
+          style={styles.tabButton}
+          onPress={() => router.push("/leave")}
         >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "leave" && styles.tabTextActive,
-            ]}
-          >
-            Pengajuan Cuti
-          </Text>
+          <Text style={styles.tabText}>Pengajuan Cuti</Text>
         </Pressable>
         <Pressable
           style={[
@@ -743,63 +678,6 @@ export default function HRISApp() {
             ))}
           </ScrollView>
         )}
-        {activeTab === "leave" && (
-          <ScrollView contentContainerStyle={styles.scrollContent}>
-            <View style={styles.leaveHeaderRow}>
-              <Text style={styles.sectionHeaderTitle}>
-                Daftar Pengajuan Cuti
-              </Text>
-              <Pressable
-                style={styles.addLeaveBtn}
-                onPress={() => setLeaveModalVisible(true)}
-              >
-                <Text style={styles.addLeaveBtnText}>+ Ajukan Cuti</Text>
-              </Pressable>
-            </View>
-
-            {leaveRequests.map((leave) => (
-              <View key={leave.id} style={styles.leaveCard}>
-                <View style={styles.leaveTopRow}>
-                  <Text style={styles.leaveType}>{leave.type}</Text>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      {
-                        backgroundColor:
-                          leave.status === "Disetujui"
-                            ? "#DEF7EC"
-                            : leave.status === "Pending"
-                              ? "#FEF08A"
-                              : "#FDE8E8",
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusText,
-                        {
-                          color:
-                            leave.status === "Disetujui"
-                              ? "#03543F"
-                              : leave.status === "Pending"
-                                ? "#713F12"
-                                : "#9B1C1C",
-                        },
-                      ]}
-                    >
-                      {leave.status}
-                    </Text>
-                  </View>
-                </View>
-
-                <Text style={styles.leaveDates}>
-                  {leave.startDate} s/d {leave.endDate}
-                </Text>
-                <Text style={styles.leaveReason}>Alasan: {leave.reason}</Text>
-              </View>
-            ))}
-          </ScrollView>
-        )}
         {activeTab === "profile" && (
           <ScrollView contentContainerStyle={styles.scrollContent}>
             <Text style={styles.sectionHeaderTitle}>Data Profil</Text>
@@ -935,69 +813,6 @@ export default function HRISApp() {
         </View>
           </Modal>
 
-          <Modal
-        visible={leaveModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setLeaveModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Form Pengajuan Cuti</Text>
-
-            <Text style={styles.inputLabel}>Jenis Cuti</Text>
-            <View style={styles.divisionPickerRow}>
-              {["Cuti Tahunan", "Izin Sakit", "Cuti Melahirkan"].map((type) => (
-                <Pressable
-                  key={type}
-                  style={[
-                    styles.pickerChip,
-                    leaveType === type && styles.pickerChipActive,
-                  ]}
-                  onPress={() => setLeaveType(type)}
-                >
-                  <Text
-                    style={[
-                      styles.pickerChipText,
-                      leaveType === type && styles.pickerChipTextActive,
-                    ]}
-                  >
-                    {type}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <Text style={styles.inputLabel}>Alasan / Keterangan *</Text>
-            <TextInput
-              style={[
-                styles.modalInput,
-                { height: 80, textAlignVertical: "top" },
-              ]}
-              placeholder="Tuliskan alasan pengajuan cuti Anda..."
-              multiline
-              numberOfLines={3}
-              value={leaveReason}
-              onChangeText={setLeaveReason}
-            />
-
-            <View style={styles.modalActions}>
-              <Pressable
-                style={[styles.modalBtn, styles.modalBtnCancel]}
-                onPress={() => setLeaveModalVisible(false)}
-              >
-                <Text style={styles.modalBtnCancelText}>Batal</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.modalBtn, styles.modalBtnSubmit]}
-                onPress={handleCreateLeave}
-              >
-                <Text style={styles.modalBtnSubmitText}>Kirim Pengajuan</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-          </Modal>
         </>
       )}
     </SafeAreaView>
