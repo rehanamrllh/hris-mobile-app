@@ -42,6 +42,36 @@ export interface Database {
         };
         Relationships: [];
       };
+      attendance_records: {
+        Row: {
+          id: string;
+          user_id: string;
+          work_date: string;
+          check_in: string;
+          check_out: string | null;
+          status: "Tepat Waktu" | "Terlambat";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          work_date: string;
+          check_in: string;
+          check_out?: string | null;
+          status: "Tepat Waktu" | "Terlambat";
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          work_date?: string;
+          check_in?: string;
+          check_out?: string | null;
+          status?: "Tepat Waktu" | "Terlambat";
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

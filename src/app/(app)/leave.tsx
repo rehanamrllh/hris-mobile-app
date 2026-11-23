@@ -39,7 +39,7 @@ function isValidDate(value: string): boolean {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
-export default function LeaveScreen() {
+export function LeaveContent() {
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -196,13 +196,7 @@ export default function LeaveScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" />
-      <View style={styles.header}>
-        <Text style={styles.title}>Pengajuan Cuti</Text>
-        <Text style={styles.subtitle}>Daftar pengajuan milik akun Anda</Text>
-      </View>
-
+    <>
       <View style={styles.content}>
         <View style={styles.actionsRow}>
           <Text style={styles.sectionTitle}>Pengajuan Saya</Text>
@@ -364,6 +358,19 @@ export default function LeaveScreen() {
           </ScrollView>
         </View>
       </Modal>
+    </>
+  );
+}
+
+export default function LeaveScreen() {
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" />
+      <View style={styles.header}>
+        <Text style={styles.title}>Pengajuan Cuti</Text>
+        <Text style={styles.subtitle}>Daftar pengajuan milik akun Anda</Text>
+      </View>
+      <LeaveContent />
     </SafeAreaView>
   );
 }

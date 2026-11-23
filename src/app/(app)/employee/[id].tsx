@@ -1,7 +1,18 @@
-import { useLocalSearchParams } from "expo-router";
+import { useEffect } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView, StyleSheet, Text, View } from "react-native";
 
+import { useAuth } from "@/context/AuthContext";
+import {
+  canAccessEmployeeDirectory,
+  getAccessRole,
+} from "@/lib/authorization";
+
 export default function EmployeeDetailScreen() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const accessRole = getAccessRole(user?.user_metadata);
+  const canAccessDirectory = canAccessEmployeeDirectory(accessRole);
   const params = useLocalSearchParams<{
     id?: string;
     name?: string;
@@ -11,6 +22,25 @@ export default function EmployeeDetailScreen() {
     status?: string;
     avatarBg?: string;
   }>();
+
+  useEffect(() => {
+    if (!canAccessDirectory) {
+      router.replace("/(app)" as never);
+    }
+  }, [canAccessDirectory, router]);
+
+  if (!canAccessDirectory) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.deniedCard}>
+          <Text style={styles.deniedTitle}>Akses Ditolak</Text>
+          <Text style={styles.deniedText}>
+            Hanya manager ke atas yang dapat melihat detail pegawai.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const getStatusStyle = (status?: string) => {
     switch (status) {
@@ -78,6 +108,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F3F4F6",
     padding: 20,
+  },
+  deniedCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 24,
+    alignItems: "center",
+  },
+  deniedTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#B91C1C",
+  },
+  deniedText: {
+    marginTop: 8,
+    textAlign: "center",
+    color: "#4B5563",
   },
   card: {
     backgroundColor: "#FFFFFF",

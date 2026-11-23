@@ -1,6 +1,17 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
+import { LeaveContent } from "@/app/(app)/leave";
+import {
+  clockIn,
+  clockOut,
+  getMyAttendanceRecords,
+  type AttendanceRecord,
+} from "@/services/attendanceApi";
+import {
+  canAccessEmployeeDirectory,
+  getAccessRole,
+} from "@/lib/authorization";
 import { getEmployees } from "@/services/employeeApi";
 import type { ExternalEmployee } from "@/types/externalEmployee";
 import {
@@ -25,14 +36,6 @@ export interface Employee {
   email: string;
   avatarBg: string;
   status: "Active" | "On Leave" | "Remote";
-}
-
-export interface AttendanceRecord {
-  id: string;
-  date: string;
-  checkIn: string;
-  checkOut: string;
-  status: "Tepat Waktu" | "Terlambat" | "Cuti";
 }
 
 const AVATAR_COLORS = [
@@ -114,57 +117,27 @@ const INITIAL_EMPLOYEES: Employee[] = [
   },
 ];
 
-const INITIAL_ATTENDANCE: AttendanceRecord[] = [
-  {
-    id: "ATT-1",
-    date: "06 Okt 2026",
-    checkIn: "08:45 AM",
-    checkOut: "05:00 PM",
-    status: "Tepat Waktu",
-  },
-  {
-    id: "ATT-2",
-    date: "05 Okt 2026",
-    checkIn: "08:55 AM",
-    checkOut: "05:05 PM",
-    status: "Tepat Waktu",
-  },
-  {
-    id: "ATT-3",
-    date: "02 Okt 2026",
-    checkIn: "09:15 AM",
-    checkOut: "05:30 PM",
-    status: "Terlambat",
-  },
-  {
-    id: "ATT-4",
-    date: "01 Okt 2026",
-    checkIn: "08:40 AM",
-    checkOut: "05:00 PM",
-    status: "Tepat Waktu",
-  },
-];
-
 export default function HRISApp() {
   const router = useRouter();
   const { user } = useAuth();
+  const accessRole = getAccessRole(user?.user_metadata);
+  const canAccessDirectory = canAccessEmployeeDirectory(accessRole);
   const [activeTab, setActiveTab] = useState<
-    "directory" | "attendance" | "profile"
-  >("directory");
+    "directory" | "attendance" | "leave" | "profile"
+  >(canAccessDirectory ? "directory" : "attendance");
   const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
   const [externalApiCount, setExternalApiCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDivision, setSelectedDivision] = useState("All");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(canAccessDirectory);
 
-  const [attendanceLogs, setAttendanceLogs] =
-    useState<AttendanceRecord[]>(INITIAL_ATTENDANCE);
+  const [attendanceLogs, setAttendanceLogs] = useState<AttendanceRecord[]>([]);
+  const [activeAttendanceId, setActiveAttendanceId] = useState<string | null>(
+    null,
+  );
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [checkInStatus, setCheckInStatus] = useState<
-    "Tepat Waktu" | "Terlambat"
-  >("Tepat Waktu");
 
   const [addEmpModalVisible, setAddEmpModalVisible] = useState(false);
   const [newEmpName, setNewEmpName] = useState("");
@@ -173,6 +146,10 @@ export default function HRISApp() {
   const [newEmpEmail, setNewEmpEmail] = useState("");
 
   useEffect(() => {
+    if (!canAccessDirectory) {
+      return;
+    }
+
     const controller = new AbortController();
 
     const loadExternalEmployees = async () => {
@@ -202,12 +179,37 @@ export default function HRISApp() {
 
     void loadExternalEmployees();
     return () => controller.abort();
-  }, []);
+  }, [canAccessDirectory]);
 
   useEffect(() => {
     if (activeTab !== "attendance") {
       return;
     }
+
+    void getMyAttendanceRecords()
+      .then((records) => {
+        setAttendanceLogs(records);
+        const today = new Date().toISOString().slice(0, 10);
+        const activeRecord = records.find(
+          (record) => record.work_date === today && record.check_out === null,
+        );
+        setActiveAttendanceId(activeRecord?.id ?? null);
+        if (activeRecord) {
+          setIsCheckedIn(true);
+          setCheckInTime(
+            new Date(activeRecord.check_in).toLocaleTimeString("id-ID", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          );
+        }
+      })
+      .catch((error: unknown) => {
+        Alert.alert(
+          "Gagal Memuat Presensi",
+          error instanceof Error ? error.message : "Terjadi kesalahan.",
+        );
+      });
 
     const initialClockUpdate = setTimeout(() => {
       setCurrentTime(new Date());
@@ -272,48 +274,59 @@ export default function HRISApp() {
       .toUpperCase();
   };
 
-  const handleClockToggle = () => {
+  const handleClockToggle = async () => {
     const now = new Date();
     const timeString = now.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
     });
-    const dateString = now.toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
 
-    if (!isCheckedIn) {
-      const isLate =
-        now.getHours() > 8 || (now.getHours() === 8 && now.getMinutes() > 30);
-      setIsCheckedIn(true);
-      setCheckInTime(timeString);
-      setCheckInStatus(isLate ? "Terlambat" : "Tepat Waktu");
+    try {
+      if (!isCheckedIn) {
+        const isLate =
+          now.getHours() > 8 ||
+          (now.getHours() === 8 && now.getMinutes() > 30);
+        const status = isLate ? "Terlambat" : "Tepat Waktu";
+        const record = await clockIn(status);
+        setActiveAttendanceId(record.id);
+        setIsCheckedIn(true);
+        setCheckInTime(timeString);
+        setAttendanceLogs((current) => [
+          record,
+          ...current.filter((item) => item.id !== record.id),
+        ]);
+        Alert.alert(
+          "Presensi Berhasil",
+          `Anda telah Check-In pada pukul ${timeString}`,
+        );
+      } else if (activeAttendanceId) {
+        const record = await clockOut(activeAttendanceId);
+        setIsCheckedIn(false);
+        setActiveAttendanceId(null);
+        setCheckInTime(null);
+        setAttendanceLogs((current) =>
+          current.map((item) => (item.id === record.id ? record : item)),
+        );
+        Alert.alert(
+          "Presensi Berhasil",
+          `Anda telah Check-Out pada pukul ${timeString}`,
+        );
+      }
+    } catch (error: unknown) {
       Alert.alert(
-        "Presensi Berhasil",
-        `Anda telah Check-In pada pukul ${timeString}`,
-      );
-    } else {
-      setIsCheckedIn(false);
-      const newRecord: AttendanceRecord = {
-        id: `ATT-${Date.now()}`,
-        date: dateString,
-        checkIn: checkInTime || "08:45 AM",
-        checkOut: timeString,
-        status: checkInStatus,
-      };
-      setAttendanceLogs([newRecord, ...attendanceLogs]);
-      setCheckInTime(null);
-      setCheckInStatus("Tepat Waktu");
-      Alert.alert(
-        "Presensi Berhasil",
-        `Anda telah Check-Out pada pukul ${timeString}`,
+        "Presensi Gagal",
+        error instanceof Error ? error.message : "Terjadi kesalahan.",
       );
     }
   };
 
   const handleAddEmployee = () => {
+    if (!canAccessDirectory) {
+      setAddEmpModalVisible(false);
+      Alert.alert("Akses Ditolak", "Hanya manager ke atas yang dapat menambah pegawai.");
+      return;
+    }
+
     if (!newEmpName.trim() || !newEmpRole.trim()) {
       Alert.alert("Peringatan", "Mohon isi nama dan jabatan pegawai.");
       return;
@@ -403,7 +416,14 @@ export default function HRISApp() {
                 transform: [{ scale: pressed ? 0.96 : 1 }],
               },
             ]}
-            onPress={() =>
+            onPress={() => {
+              if (!canAccessDirectory) {
+                Alert.alert(
+                  "Akses Ditolak",
+                  "Hanya manager ke atas yang dapat melihat detail pegawai.",
+                );
+                return;
+              }
               router.push({
                 pathname: "/employee/[id]",
                 params: {
@@ -415,8 +435,8 @@ export default function HRISApp() {
                   status: item.status,
                   avatarBg: item.avatarBg,
                 },
-              })
-            }
+              });
+            }}
           >
             <Text style={styles.actionButtonText}>Lihat Detail</Text>
           </Pressable>
@@ -447,12 +467,23 @@ export default function HRISApp() {
                 : ""}
             </Text>
           </View>
-          <Pressable
-            style={styles.addEmployeeBtnHeader}
-            onPress={() => setAddEmpModalVisible(true)}
-          >
-            <Text style={styles.addEmployeeBtnText}>+ Employee</Text>
-          </Pressable>
+          {canAccessDirectory ? (
+            <Pressable
+              style={styles.addEmployeeBtnHeader}
+              onPress={() => {
+                if (!canAccessDirectory) {
+                  Alert.alert(
+                    "Akses Ditolak",
+                    "Hanya manager ke atas yang dapat menambah pegawai.",
+                  );
+                  return;
+                }
+                setAddEmpModalVisible(true);
+              }}
+            >
+              <Text style={styles.addEmployeeBtnText}>+ Employee</Text>
+            </Pressable>
+          ) : null}
         </View>
 
         <View style={styles.statsContainer}>
@@ -477,22 +508,24 @@ export default function HRISApp() {
         </View>
           </View>
           <View style={styles.tabBarContainer}>
-        <Pressable
-          style={[
-            styles.tabButton,
-            activeTab === "directory" && styles.tabButtonActive,
-          ]}
-          onPress={() => setActiveTab("directory")}
-        >
-          <Text
+        {canAccessDirectory ? (
+          <Pressable
             style={[
-              styles.tabText,
-              activeTab === "directory" && styles.tabTextActive,
+              styles.tabButton,
+              activeTab === "directory" && styles.tabButtonActive,
             ]}
+            onPress={() => setActiveTab("directory")}
           >
-            Direktori
-          </Text>
-        </Pressable>
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "directory" && styles.tabTextActive,
+              ]}
+            >
+              Direktori
+            </Text>
+          </Pressable>
+        ) : null}
         <Pressable
           style={[
             styles.tabButton,
@@ -510,10 +543,20 @@ export default function HRISApp() {
           </Text>
         </Pressable>
         <Pressable
-          style={styles.tabButton}
-          onPress={() => router.push("/leave")}
+          style={[
+            styles.tabButton,
+            activeTab === "leave" && styles.tabButtonActive,
+          ]}
+          onPress={() => setActiveTab("leave")}
         >
-          <Text style={styles.tabText}>Pengajuan Cuti</Text>
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "leave" && styles.tabTextActive,
+            ]}
+          >
+            Pengajuan Cuti
+          </Text>
         </Pressable>
         <Pressable
           style={[
@@ -533,7 +576,7 @@ export default function HRISApp() {
         </Pressable>
           </View>
           <View style={styles.contentContainer}>
-        {activeTab === "directory" && (
+        {activeTab === "directory" && canAccessDirectory && (
           <>
             <View style={styles.searchSection}>
               <TextInput
@@ -648,9 +691,26 @@ export default function HRISApp() {
             {attendanceLogs.map((log) => (
               <View key={log.id} style={styles.logCard}>
                 <View style={styles.logInfo}>
-                  <Text style={styles.logDate}>{log.date}</Text>
+                  <Text style={styles.logDate}>
+                    {new Date(`${log.work_date}T00:00:00`).toLocaleDateString(
+                      "id-ID",
+                      { day: "2-digit", month: "short", year: "numeric" },
+                    )}
+                  </Text>
                   <Text style={styles.logTime}>
-                    Masuk: {log.checkIn} • Keluar: {log.checkOut}
+                    Masuk:{" "}
+                    {new Date(log.check_in).toLocaleTimeString("id-ID", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                    {" • "}
+                    Keluar:{" "}
+                    {log.check_out
+                      ? new Date(log.check_out).toLocaleTimeString("id-ID", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "Belum"}
                   </Text>
                 </View>
                 <View
@@ -677,6 +737,11 @@ export default function HRISApp() {
               </View>
             ))}
           </ScrollView>
+        )}
+        {activeTab === "leave" && (
+          <View style={styles.leaveTabContainer}>
+            <LeaveContent />
+          </View>
         )}
         {activeTab === "profile" && (
           <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -733,7 +798,7 @@ export default function HRISApp() {
         )}
           </View>
           <Modal
-        visible={addEmpModalVisible}
+        visible={canAccessDirectory && addEmpModalVisible}
         animationType="slide"
         transparent={true}
         onRequestClose={() => setAddEmpModalVisible(false)}
@@ -934,6 +999,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingTop: 16,
+  },
+  leaveTabContainer: {
+    flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 20,
